@@ -1,37 +1,115 @@
 ## Notes
-*Please do not supply your name or email address in this document. We're doing our best to remain unbiased.*
+I created a REST API server using Ruby and Sinatra
 
-- disallow any routes outside of the scope?
-- can a user reset their api token? add a TTL to it
+The following API endpoints are supported:
 
+* `GET /v1/register` - create a new user, and return the API token
+* `GET /v1/login` - get the API token for an existing user
+* `GET /v1/current` - get the current integer for the user
+* `GET /v1/next` - get the next integer in the sequence for the user
+* `POST /v1/current` - set the integer for the user
+
+#### Examples:
+1. Create a user
+```
+curl --data "email=$email" --data "password=$password" "http://localhost:4567/v1/register"
+> {"token":"eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImtlbHNleUBzdGVtbWxlci50ZWNoIn0.IfDsdTSFX5VMF2G_Vc5CJptJBhhyjsaBk7g77zqTNss"}
+
+# Note: if you attempt to create the user again, you will get an error because the user already exists. Instead, you can fetch the API token again by calling the /v1/login endpoint.
+```
+
+2. Use the API token in 1, to get the current number
+```
+curl -H "Authorization: Bearer $API_TOKEN" "http://localhost:4567/v1/current"
+> {"integer":1}
+```
+
+3. Increment the number
+```
+curl -H "Authorization: Bearer $API_TOKEN" "http://localhost:4567/v1/next"
+> {"integer":2}
+```
+
+4. Set the number to 123
+```
+curl --data "current=123" -H "Authorization: Bearer $API_TOKEN" "http://localhost:4567/v1/current"
+> {}
+
+# Note: you can call /v1/current again to validate here, since the POST update doesn't return anything
+```
+
+5. Fetch the API token for the existing user (Note: you must use the same email and password in step 1)
+```
+curl --data "email=$email" --data "password=$password" "http://localhost:4567/v1/login"
+> {"api_token":"eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImtlbHNleUBzdGVtbWxlci50ZWNoIn0.IfDsdTSFX5VMF2G_Vc5CJptJBhhyjsaBk7g77zqTNss"}
+```
+
+Repeat the steps above to create additional users, and see how their integers increment independently.
 
 ### Date
-The date you're submitting this.
+05/07/2020
 
 ### Location of deployed application
-If applicable, please provide the url where we can find and interact with your running application.
+Once you have the app running locally (see section below), you can access it via:
+
+http://localhost:4567
 
 ### Time spent
-How much time did you spend on the assignment? Normally, this is expressed in hours.
+I spent approximately 4.5 hours developing this application.
 
 ### Assumptions made
-Use this section to tell us about any assumptions that you made when creating your solution.
+The following is a list of assumptions I made during this assignment:
+- The Integer value begins at value 1. (Traditionally, in Computer Science, we begin counting at 0 for indices, but IDs, we generally start at 1)
+- The Integer can be set to an arbitrary, non-negative value. The user does not need to have previously set the number to this value in the past. E.g., The user can start with integer 1, and then immediately set it to 1000. 
+- I picked a minimum value of 1, and a maximum value of 1,000,000,000,000 for the Integer, and validate against these bounds. If the user attempts to set or increment above the maximum value, an error will be returned (try it!).
+- The API token is passed into the endpoints via HTTP header with the format `Authorization: Bearer $API_TOKEN`, and is only required on endpoints for fetching/incrementing/updating the number. The API token is not used on the registration and login endpoints.
+
 
 ### Shortcuts/Compromises made
-If applicable. Did you do something that you feel could have been done better in a real-world application? Please let us know.
-- using a database to help scale to a large number of users
-- 
+There are a few areas that I would focus on, when launching a real-world application.
+
+#### Data Storage: 
+I used an in-memory dictionary storage for the user information, with only the necessary fields (email, encrypted password, api_token, and number). Since this is in memory, I decided to keep a maximum number of users at 1000, to protect against any memory issues (though this number can be larger). I would prefer to use a real database to help scale to a large number of users, as well as to be able to enforce validation/types of fields, etc. In that case I would include additional user fields such as user id, name, username, phone number, address, creation time, updated time, last login time, etc., store the API tokens in a separate table (which would have expiration and revoke abilities).
+
+#### Testing
+I would not feel comfortable shipping this application without any tests. I would spend time writing unit tests for the various validation functions, API token encoding/decoding, password encryptions, etc. I would also write integration tests to ensure the proper behaviour of fetching, incrementing and setting the integer, and all the failure cases around the registration and login scenarios. I would also test that each user is able to independently take action on their number, without affecting any other user's number. Overall, I would write a lot of tests.
+
+For this assignment, I did a lot of manual testing, to ensure the proper error codes are returned, and all the behaviour is correct.
+
+#### Code Structure
+I would love to refactor the code into modules and classes. I kept it all in one file for now, so that it can be easily read for this this assignment.
+
+#### API Best Practices
+I would incorporate other API best practices, such as rate limiting the endpoints. This is especially for the registration and login flows, to prevent any spam/abusive behaviour.
 
 ### Stretch goals attempted
-If applicable, use this area to tell us what stretch goals you attempted. What went well? What do you wish you could have done better? If you didn't attempt any of the stretch goals, feel free to let us know why.
- 
+I did not attempt any of the stretch goals. Instead I decided to focus on the main implementation, validation, failure cases, and keeping the code clean with documentation (both embedded in the code and this README). I also spent time manually testing the various scenarios to ensure the right error codes were returned in each scenario, and expected behaviour occurred.
+
 ### Instructions to run assignment locally
-If applicable, please provide us with the necessary instructions to run your solution.
+First, ensure that you have Ruby and Bundle installed locally.
+_Note: I used Ruby version 2.3.7 and Bundle version 2.1.4_
+
+Next, start the Ruby Sinatra app by running the following commands:
+```
+bundle install
+ruby app.rb
+```
 
 ### What did you not include in your solution that you want us to know about?
-Were you short on time and not able to include something that you want us to know about? Please list it here so that we know that you considered it.
+If I had more time, I would have also liked to include features such as the following:
+- Deleting an existing user.
+- Ability to ban/deactivate a user.
+- Adding multiple users to an account (1:many relationship), so that developers on the same team can query the service and continue to coordinate on the ID incrementing. I would also add different scopes on each user (e.g., read/write permissions).
+- Ability to reset a password for an existing user.
+- Ability to logout.
+- Ability to re-set an API token, and add an expiration (TTL) to tokens, so that they do not live forever. Instead, they would need to be rotated every N units of time.
+- Add logging (especially for the failure cases that would require debugging).
+- Add metrics to track the counts of each request coming in, the failures, etc., add dashboards, alerts, the works!
+- Keep a record of every value a user has set its integer to, so that there is an audit trail of which numbers were used, incremented, reset, etc.
+
 
 ### Other information about your submission that you feel it's important that we know if applicable.
+N/A, everything is already captured in the previous sections
 
 ### Your feedback on this technical challenge
-Have feedback for how we could make this assignment better? Please let us know.
+I found that the example curl requests to be very helpful, and appreciate the note at the top about not including name/emails to prevent any bias. Great work!
