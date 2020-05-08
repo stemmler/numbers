@@ -3,17 +3,18 @@ I created a REST API server using Ruby and Sinatra
 
 The following API endpoints are supported:
 
-GET /v1/register - creates a new user, and returns the API token
-GET /v1/login - returns the API token for an existing user
-GET /v1/current - get the current integer for the user
-GET /v1/next - get the next integer in the sequence for the user
-POST /v1/current - set the integer for the user
+* `GET /v1/register` - create a new user, and return the API token
+* `GET /v1/login` - get the API token for an existing user
+* `GET /v1/current` - get the current integer for the user
+* `GET /v1/next` - get the next integer in the sequence for the user
+* `POST /v1/current` - set the integer for the user
 
-### Examples:
+#### Examples:
 1. Create a user
 ```
 curl --data "email=$email" --data "password=$password" "http://localhost:4567/v1/register"
 > {"token":"eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImtlbHNleUBzdGVtbWxlci50ZWNoIn0.IfDsdTSFX5VMF2G_Vc5CJptJBhhyjsaBk7g77zqTNss"}
+
 # Note: if you attempt to create the user again, you will get an error because the user already exists. Instead, you can fetch the API token again by calling the /v1/login endpoint.
 ```
 
@@ -33,6 +34,7 @@ curl -H "Authorization: Bearer $API_TOKEN" "http://localhost:4567/v1/next"
 ```
 curl --data "current=123" -H "Authorization: Bearer $API_TOKEN" "http://localhost:4567/v1/current"
 > {}
+
 # Note: you can call /v1/current again to validate here, since the POST update doesn't return anything
 ```
 
@@ -41,6 +43,8 @@ curl --data "current=123" -H "Authorization: Bearer $API_TOKEN" "http://localhos
 curl --data "email=$email" --data "password=$password" "http://localhost:4567/v1/login"
 > {"api_token":"eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImtlbHNleUBzdGVtbWxlci50ZWNoIn0.IfDsdTSFX5VMF2G_Vc5CJptJBhhyjsaBk7g77zqTNss"}
 ```
+
+Repeat the steps above to create additional users, and see how their integers increment independently.
 
 ### Date
 05/07/2020
@@ -55,8 +59,8 @@ I spent approximately 4.5 hours developing this application.
 
 ### Assumptions made
 The following is a list of assumptions I made during this assignment:
-- The Integer value begins at value 1. (Traditionally, in Computer Science, we begin counting at 0 for indices, but IDs, we generally want to start at 1.)
-- The Integer can be set to an arbitrary, non-negative value. The user does not need to have previously set the number to this value in the past. E.g., The user can start with integer 1, and then set it to 1000. 
+- The Integer value begins at value 1. (Traditionally, in Computer Science, we begin counting at 0 for indices, but IDs, we generally start at 1)
+- The Integer can be set to an arbitrary, non-negative value. The user does not need to have previously set the number to this value in the past. E.g., The user can start with integer 1, and then immediately set it to 1000. 
 - I picked a minimum value of 1, and a maximum value of 1,000,000,000,000 for the Integer, and validate against these bounds. If the user attempts to set or increment above the maximum value, an error will be returned (try it!).
 - The API token is passed into the endpoints via HTTP header with the format `Authorization: Bearer $API_TOKEN`, and is only required on endpoints for fetching/incrementing/updating the number. The API token is not used on the registration and login endpoints.
 
@@ -65,20 +69,22 @@ The following is a list of assumptions I made during this assignment:
 There are a few areas that I would focus on, when launching a real-world application.
 
 #### Data Storage: 
-I used an in-memory dictionary storage for the user information, with only the necessary fields (email, encrypted password, api_token, and number). Since this is in memory, I decided to keep a maximum number of users at 1000, to protect against any memory issues (though this number can be larger). I would prefer to use a real database to help scale to a large number of users, as well as to be able to enforce validation/types of fields, etc. In that case I would include additionaly user fields such as user id, name, username, phone number, address, creation time, updated time, last login time, etc.
+I used an in-memory dictionary storage for the user information, with only the necessary fields (email, encrypted password, api_token, and number). Since this is in memory, I decided to keep a maximum number of users at 1000, to protect against any memory issues (though this number can be larger). I would prefer to use a real database to help scale to a large number of users, as well as to be able to enforce validation/types of fields, etc. In that case I would include additional user fields such as user id, name, username, phone number, address, creation time, updated time, last login time, etc., store the API tokens in a separate table (which would have expiration and revoke abilities).
 
 #### Testing
-I would not feel comfortable shipping this application without any tests. I would spend time writing unit tests for the various validation functions, API token encoding/decoding, password encryptions, etc. I would also write integration tests to ensure the proper behaviour of fetching, incrementing and setting the integer, and all the failure cases around the registration and login scenarios. I would also test that each user is able to independently take action on their number, without affecting any other user's number.
+I would not feel comfortable shipping this application without any tests. I would spend time writing unit tests for the various validation functions, API token encoding/decoding, password encryptions, etc. I would also write integration tests to ensure the proper behaviour of fetching, incrementing and setting the integer, and all the failure cases around the registration and login scenarios. I would also test that each user is able to independently take action on their number, without affecting any other user's number. Overall, I would write a lot of tests.
+
+For this assignment, I did a lot of manual testing, to ensure the proper error codes are returned, and all the behaviour is correct.
 
 #### Code Structure
 I would love to refactor the code into modules and classes. I kept it all in one file for now, so that it can be easily read for this this assignment.
 
 #### API Best Practices
-I would incorporate other API best practices, such as rate limiting the endpoints. Especially for the registration and login flows, to prevent any spam/abusive behaviour.
+I would incorporate other API best practices, such as rate limiting the endpoints. This is especially for the registration and login flows, to prevent any spam/abusive behaviour.
 
 ### Stretch goals attempted
 I did not attempt any of the stretch goals. Instead I decided to focus on the main implementation, validation, failure cases, and keeping the code clean with documentation (both embedded in the code and this README). I also spent time manually testing the various scenarios to ensure the right error codes were returned in each scenario, and expected behaviour occurred.
- 
+
 ### Instructions to run assignment locally
 First, ensure that you have Ruby and Bundle installed locally.
 _Note: I used Ruby version 2.3.7 and Bundle version 2.1.4_
@@ -91,15 +97,15 @@ ruby app.rb
 
 ### What did you not include in your solution that you want us to know about?
 If I had more time, I would have also liked to include features such as the following:
-- Deleting an existing user
+- Deleting an existing user.
 - Ability to ban/deactivate a user.
-- Adding multiple users to an account (1:many relationship), so that developers on the same team can query the service and continue to coordinate on the ID incrementing. I would also add different scopes on each user (e.g., read/write permissions)
-- Reset a password for an existing user.
+- Adding multiple users to an account (1:many relationship), so that developers on the same team can query the service and continue to coordinate on the ID incrementing. I would also add different scopes on each user (e.g., read/write permissions).
+- Ability to reset a password for an existing user.
 - Ability to logout.
 - Ability to re-set an API token, and add an expiration (TTL) to tokens, so that they do not live forever. Instead, they would need to be rotated every N units of time.
 - Add logging (especially for the failure cases that would require debugging).
-- Add metrics to track the counts of each request coming in, the failures, etc.
-- Keep a record of every value a user has set, so that there is an audit trail of which numbers were used, incremented, reset, etc.
+- Add metrics to track the counts of each request coming in, the failures, etc., add dashboards, alerts, the works!
+- Keep a record of every value a user has set its integer to, so that there is an audit trail of which numbers were used, incremented, reset, etc.
 
 
 ### Other information about your submission that you feel it's important that we know if applicable.
