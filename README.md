@@ -1,4 +1,6 @@
 ## Notes
+**This README and code is hosted at https://github.com/stemmler/numbers**
+
 I created a REST API server using Ruby and Sinatra
 
 The following API endpoints are supported:
