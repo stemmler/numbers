@@ -3,7 +3,7 @@
 
 12:30 - 2 : 1.5
 5-7 : 2
-9-10 : 1
+9-10:30 : 1.5
 
 assumptions:
 - can reset to any number (does not need to have been that value in the past)
